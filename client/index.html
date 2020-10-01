@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <title>Project 1</title>
+      <link rel="stylesheet" type = "text/css"  href="main.css">
+<script>
+    const parseJSON = (xhr, content) => {
+      if(xhr.response && xhr.getResponseHeader('Content-Type') === 'application/json'){
+      const obj = JSON.parse(xhr.response);
+      console.dir(obj);
+
+         
+      content.innerHTML += `<p>${JSON.stringify(obj)}</p>`;
+        
+      }
+    };
+    
+    function initMap() {
+    // The location of Uluru
+    var uluru = {lat: -25.344, lng: 131.036};
+    // The map, centered at Uluru
+    var map = new google.maps.Map(
+        document.getElementById('map'), {zoom: 4, center: uluru});
+    // The marker, positioned at Uluru
+    var marker = new google.maps.Marker({position: uluru, map: map});
+  }
+
+  const requestLocation = (e, locationForm) => {
+    const url = '/getLocation';
+    const method = locationForm.querySelector('#methodSelect').value;
+
+    const xhr = new XMLHttpRequest();
+    xhr.open(method,url);
+    xhr.setRequestHeader("Accept","application/json");
+    if(method === 'get'){
+      xhr.onload = () => handleResponse(xhr,true);
+    }else{
+      xhr.onload = () => handleResponse(xhr,false);
+    }
+
+    xhr.send();
+
+    e.preventDefault();
+    return false;
+  }
+
+  const sendPost = (e, locationForm) => {
+      e.preventDefault();
+      
+
+      const locationAction = locationForm.getAttribute('action');
+      const locationMethod = locationForm.getAttribute('method');
+
+      const locationName = locationForm.querySelector('#nameField');
+      const latitudeField = locationForm.querySelector('#latitudeField');
+      const longitudeField = locationForm.querySelector('#longitudeField');
+
+      const xhr = new XMLHttpRequest();
+      xhr.open(locationMethod, locationAction);
+
+      xhr.setRequestHeader('Accept', 'application/json');
+      xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+
+      xhr.onload = () => handleResponse(xhr);
+
+      const formData = `name=${locationName.value}&latitude=${latitudeField.value}&longitude=${longitudeField.value}`;
+      xhr.send(formData);
+
+      return false;
+    };
+
+    const handleResponse = (xhr) => {
+      const content = document.querySelector('#content');
+      console.log(xhr.status);
+
+      switch(xhr.status){
+        case 200:
+          content.innerHTML = '<b>Success!</b>'
+          break;
+        case 201:
+          content.innerHTML = '<b>Location Created!</b>'
+          break;
+        case 204:
+          content.innerHTML = '<b>Updated! (No Content!)</b>'
+          break;
+        case 400:
+          content.innerHTML = '<b>Bad Request :(</b>'
+          break;
+        default:
+          content.innerHTML = '<b>Error Code not implemented by client</b>'
+          break;
+      }
+
+      parseJSON(xhr, content);
+      
+    };
+
+    const init = () => {
+      const locationForm = document.querySelector('#locationForm');
+      const addLocation = (e) => sendPost(e, locationForm);
+
+      const locationGet = document.querySelector('#locationFormGet');
+      const addRequest = (e) => requestLocation(e, locationGet);
+  
+      locationForm.addEventListener('submit', addLocation);
+      locationGet.addEventListener('submit', addRequest);
+    };
+
+    window.onload = init;
+
+</script>
+<script defer
+src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhbypdR7ewb2NJ-73kum-rPI2oUzoXL5I&callback=initMap">
+</script>
+</head>
+<body>
+    <h1>hello</h1>
+<div id="map"></div>
+<form id="locationForm" action="/addLocation" method="post">
+    <label for="locationName">name: </label>
+    <input id="nameField" type="text" name="name" />
+    <label for="latitide">Latitude: </label>
+    <input id="latitudeField" type="number" name="latitude" />
+    <label for="longitude">Longitude </label>
+    <input id="longitudeField" type="number" name="longitude"/>
+    <input type="submit" value="Add Location" />
+</form>
+<form id="locationFormGet" action="/getLocation" method="get">
+    <input type="submit" value="Get Location" />
+<select id="methodSelect">
+    <option value="get">GET</option>
+    <option value="head">HEAD</option>
+  </select>
+</form>
+<section id="content"></section>
+
+</body>
+</html>

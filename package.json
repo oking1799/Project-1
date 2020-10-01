@@ -1,0 +1,26 @@
+{
+  "name": "project-1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./src/server.js",
+    "pretest": "eslint ./src --fix",
+    "test": "echo \"Tests Complete!\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oking1799/Project-1.git"
+  },
+  "author": "Owen King",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/oking1799/Project-1/issues"
+  },
+  "homepage": "https://github.com/oking1799/Project-1#readme",
+  "devDependencies": {
+    "eslint": "^7.10.0",
+    "eslint-config-airbnb": "^18.2.0",
+    "eslint-plugin-import": "^2.22.1"
+  }
+}
