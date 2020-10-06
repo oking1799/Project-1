@@ -34,6 +34,9 @@ const addLocation = (request, response, body) => {
   locations[body.name].name = body.name
   locations[body.name].latitude = body.latitude;
   locations[body.name].longitude = body.longitude;
+  locations[body.name].rating = body.rating;
+  locations[body.name].review = body.review;
+  
 
   if (responseCode === 201) {
     responseJSON.message = 'Created Successfully';

@@ -4,27 +4,121 @@
       <title>Project 1</title>
       <link rel="stylesheet" type = "text/css"  href="main.css">
 <script>
+  let map;
+  let locationNames = ["uluru"];
+
+
     const parseJSON = (xhr, content) => {
       if(xhr.response && xhr.getResponseHeader('Content-Type') === 'application/json'){
       const obj = JSON.parse(xhr.response);
-      console.dir(obj);
-
-         
-      content.innerHTML += `<p>${JSON.stringify(obj)}</p>`;
+      console.dir(obj.locations);
+      for (let name in obj){
+        updateMap(obj[name]);
+        }
         
       }
     };
     
-    function initMap() {
+    
+   function initMap() {
     // The location of Uluru
-    var uluru = {lat: -25.344, lng: 131.036};
+    let uluru = {lat: -25.344, lng: 131.036};
+    let tempMarker;
     // The map, centered at Uluru
-    var map = new google.maps.Map(
+    map = new google.maps.Map(
         document.getElementById('map'), {zoom: 4, center: uluru});
-    // The marker, positioned at Uluru
-    var marker = new google.maps.Marker({position: uluru, map: map});
-  }
+    
+    const latitudeField = locationForm.querySelector('#latitudeField');
+    const longitudeField = locationForm.querySelector('#longitudeField');
 
+    map.addListener('click', function(mapsMouseEvent) {
+      if(tempMarker){
+      tempMarker.setMap(null);
+      }
+      latitudeField.value = mapsMouseEvent.latLng.lat();
+      longitudeField.value = mapsMouseEvent.latLng.lng();
+      console.log(mapsMouseEvent.latLng.toString());
+
+      tempMarker = new google.maps.Marker({
+        position: mapsMouseEvent.latLng,
+        map: map,
+        label: "?"
+        });
+    });
+ 
+
+    const contentString =
+    '<div id="infoContent">' +
+    '<div id="siteNotice">' +
+    "</div>" +
+    '<h1 id="firstHeading" class="firstHeading">Uluru</h1>' +
+    '<div id="bodyContent">' +
+    "<p><b>Uluru</b>, also referred to as <b>Ayers Rock</b>, is a large " +
+    "sandstone rock formation in the southern part of the " +
+    "Northern Territory, central Australia. It lies 335&#160;km (208&#160;mi) " +
+    "south west of the nearest large town, Alice Springs; 450&#160;km " +
+    "(280&#160;mi) by road. Kata Tjuta and Uluru are the two major " +
+    "features of the Uluru - Kata Tjuta National Park. Uluru is " +
+    "sacred to the Pitjantjatjara and Yankunytjatjara, the " +
+    "Aboriginal people of the area. It has many springs, waterholes, " +
+    "rock caves and ancient paintings. Uluru is listed as a World " +
+    "Heritage Site.</p>" +
+    '<p>Attribution: Uluru, <a href="https://en.wikipedia.org/w/index.php?title=Uluru&oldid=297882194">' +
+    "https://en.wikipedia.org/w/index.php?title=Uluru</a> " +
+    "(last visited June 22, 2009).</p>" +
+    "</div>" +
+    "</div>";
+
+    const infowindow = new google.maps.InfoWindow({
+    content: contentString,
+  });
+    // The marker, positioned at Uluru
+    let marker = new google.maps.Marker({position: uluru, map: map});
+    
+    marker.addListener("click", () => {
+    infowindow.open(map, marker);
+  });
+  
+  }
+   
+
+ function updateMap(location){
+   let newLocation;
+   
+   for (let name in location){
+    console.log(location[name]);
+  
+    for(let i=0; i<locationNames.length; i++){
+      if(location[name].name != locationNames[i]){
+          newLocation = {lat: parseFloat(location[name].latitude), lng: parseFloat(location[name].longitude)};
+          map.setCenter(newLocation);
+          const contentString =
+             '<div id="infoContent">' +
+             '<div id="siteNotice">' +
+             "</div>" +
+              `<h1 id="firstHeading" class="firstHeading">${location[name].name}</h1>` +
+              '<div id="bodyContent">' +
+              `<h2>Rating: ${location[name].rating}/5</h2>` +
+              `<p>Review: ${location[name].review}</p?>`
+               "</div>" +
+               "</div>";
+
+          const infowindow = new google.maps.InfoWindow({
+          content: contentString,
+            });
+          let marker = new google.maps.Marker({position: newLocation, map: map});
+          marker.addListener("click", () => {
+          infowindow.open(map, marker);
+          });
+          locationNames.push(location[name].name);
+      }else{
+          
+      }
+    }
+    content.innerHTML += `<p>Name:${location[name].name} Latitude:${location[name].latitude} Longitude:${location[name].longitude} Rating:${location[name].rating} Review:${location[name].review}</p>`;
+         console.log(location[name].name);
+  }   
+ }
   const requestLocation = (e, locationForm) => {
     const url = '/getLocation';
     const method = locationForm.querySelector('#methodSelect').value;
@@ -33,9 +127,9 @@
     xhr.open(method,url);
     xhr.setRequestHeader("Accept","application/json");
     if(method === 'get'){
-      xhr.onload = () => handleResponse(xhr,true);
+      xhr.onload = () => handleResponse(xhr,"GET",true);
     }else{
-      xhr.onload = () => handleResponse(xhr,false);
+      xhr.onload = () => handleResponse(xhr,"HEAD",false);
     }
 
     xhr.send();
@@ -54,6 +148,8 @@
       const locationName = locationForm.querySelector('#nameField');
       const latitudeField = locationForm.querySelector('#latitudeField');
       const longitudeField = locationForm.querySelector('#longitudeField');
+      const ratingField = locationForm.querySelector('#ratingField');
+      const reviewField = locationForm.querySelector('#reviewField');
 
       const xhr = new XMLHttpRequest();
       xhr.open(locationMethod, locationAction);
@@ -61,15 +157,15 @@
       xhr.setRequestHeader('Accept', 'application/json');
       xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
 
-      xhr.onload = () => handleResponse(xhr);
+      xhr.onload = () => handleResponse(xhr, "POST");
 
-      const formData = `name=${locationName.value}&latitude=${latitudeField.value}&longitude=${longitudeField.value}`;
+      const formData = `name=${locationName.value}&latitude=${latitudeField.value}&longitude=${longitudeField.value}&rating=${ratingField.value}&review=${reviewField.value}`;
       xhr.send(formData);
 
       return false;
     };
 
-    const handleResponse = (xhr) => {
+    const handleResponse = (xhr, sendType) => {
       const content = document.querySelector('#content');
       console.log(xhr.status);
 
@@ -90,8 +186,9 @@
           content.innerHTML = '<b>Error Code not implemented by client</b>'
           break;
       }
-
+      if(sendType != "POST"){
       parseJSON(xhr, content);
+      }
       
     };
 
@@ -120,9 +217,13 @@ src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhbypdR7ewb2NJ-73kum-rPI2
     <label for="locationName">name: </label>
     <input id="nameField" type="text" name="name" />
     <label for="latitide">Latitude: </label>
-    <input id="latitudeField" type="number" name="latitude" />
+    <input id="latitudeField" type="float" name="latitude" />
     <label for="longitude">Longitude </label>
-    <input id="longitudeField" type="number" name="longitude"/>
+    <input id="longitudeField" type="float" name="longitude"/>
+    <label for="rating">Rating </label>
+    <input id="ratingField" type="number" min="0" max = "5" step="1" name="rating"/>
+    <label for="review">Review </label>
+    <input id="reviewField" type="text" name="review"/>
     <input type="submit" value="Add Location" />
 </form>
 <form id="locationFormGet" action="/getLocation" method="get">
