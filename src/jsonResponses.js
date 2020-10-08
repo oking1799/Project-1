@@ -46,11 +46,20 @@ const addLocation = (request, response, body) => {
   return respondJSONMeta(request, response, responseCode);
 };
 
-const getLocation = (request, response) => {
-  const responseJSON = {
+const getLocation = (request, response, query) => {
+  console.log(`query:${query}`);
+  if(query){                                  //if url has a query
+      if(locations[query]){                   //if query is the name of a valid location
+        const responseJSON = locations[query];       //set GET response to that location
+        return respondJSON(request, response, 200, responseJSON);
+      }
+    return notFound(request, response);       //if no query match is found send 404
+  }else{
+  const responseJSON = {                      //if no query return all locations
     locations,
   };
   return respondJSON(request, response, 200, responseJSON);
+} 
 };
 
 const getLocationMeta = (request, response) => respondJSONMeta(request, response, 200);

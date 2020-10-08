@@ -6,15 +6,32 @@
 <script>
   let map;
   let locationNames = ["uluru"];
+  let markers = [];
+  let tempMarker;
 
 
-    const parseJSON = (xhr, content) => {
-      if(xhr.response && xhr.getResponseHeader('Content-Type') === 'application/json'){
+  const parseJSON = (xhr, content) => {
+    if(xhr.response && xhr.getResponseHeader('Content-Type') === 'application/json'){
       const obj = JSON.parse(xhr.response);
-      console.dir(obj.locations);
-      for (let name in obj){
-        updateMap(obj[name]);
+      if(xhr.status !== 404)
+      
+          for (let location in obj){                  //loop through objects
+            let indexedloc = obj[location];           //get an index of the loop
+            for(let name in indexedloc){              //loop to get the object at the index 
+              if(indexedloc[name].name){              //check if Json object is not singular
+              console.log(indexedloc[name]);
+                updateMap(indexedloc);
+                break;
+                }else{
+                  let queryLatLng = {lat: parseFloat(obj.latitude), lng: parseFloat(obj.longitude)}
+                  map.setCenter(queryLatLng);
+                  break;
+              
+            }
+          }
         }
+        
+         
         
       }
     };
@@ -23,7 +40,6 @@
    function initMap() {
     // The location of Uluru
     let uluru = {lat: -25.344, lng: 131.036};
-    let tempMarker;
     // The map, centered at Uluru
     map = new google.maps.Map(
         document.getElementById('map'), {zoom: 4, center: uluru});
@@ -83,48 +99,72 @@
    
 
  function updateMap(location){
-   let newLocation;
-   
-   for (let name in location){
-    console.log(location[name]);
+   for(let name in location){
+    if(markers.length > 0){
+     for(let i=0; i < markers.length; i++){
+      if(markers[i].getTitle() == location[name].name){       //IF THE MARKER AND THE LOCATION HAVE THE SAME NAME, SET THE MARKER'S COORDS TO THE LOCATION"S COORDS
+           let newLatLng = {lat: parseFloat(location[name].latitude), lng: parseFloat(location[name].longitude)};
+           markers[i].setPosition(newLatLng);
+           tempMarker.setMap(null);
+           break;
+      }else{                                                //IF NOT,  JUST CREATE NEW MARKER
+        createMarker(location[name]);
+      }
+     }
+       }else{
+        createMarker(location[name]);
+       }   
   
-    for(let i=0; i<locationNames.length; i++){
-      if(location[name].name != locationNames[i]){
-          newLocation = {lat: parseFloat(location[name].latitude), lng: parseFloat(location[name].longitude)};
+   
+    
+    content.innerHTML += `<p>Name:${location[name].name} Latitude:${location[name].latitude} Longitude:${location[name].longitude} Rating:${location[name].rating} Review:${location[name].review}</p>`;
+         console.log(location.name);
+    }
+ }
+   
+  
+ 
+
+ const createMarker = (location) => {
+  let newLocation;
+
+  newLocation = {lat: parseFloat(location.latitude), lng: parseFloat(location.longitude)};
           map.setCenter(newLocation);
           const contentString =
              '<div id="infoContent">' +
              '<div id="siteNotice">' +
              "</div>" +
-              `<h1 id="firstHeading" class="firstHeading">${location[name].name}</h1>` +
+              `<h1 id="firstHeading" class="firstHeading">${location.name}</h1>` +
               '<div id="bodyContent">' +
-              `<h2>Rating: ${location[name].rating}/5</h2>` +
-              `<p>Review: ${location[name].review}</p?>`
+              `<h2>Rating: ${location.rating}/5</h2>` +
+              `<p>Review: ${location.review}</p?>`
                "</div>" +
                "</div>";
 
           const infowindow = new google.maps.InfoWindow({
           content: contentString,
             });
-          let marker = new google.maps.Marker({position: newLocation, map: map});
+          let marker = new google.maps.Marker({position: newLocation, map: map, title: location.name});
           marker.addListener("click", () => {
           infowindow.open(map, marker);
           });
-          locationNames.push(location[name].name);
-      }else{
-          
-      }
-    }
-    content.innerHTML += `<p>Name:${location[name].name} Latitude:${location[name].latitude} Longitude:${location[name].longitude} Rating:${location[name].rating} Review:${location[name].review}</p>`;
-         console.log(location[name].name);
-  }   
+          markers.push(marker);
+         
+
  }
   const requestLocation = (e, locationForm) => {
     const url = '/getLocation';
     const method = locationForm.querySelector('#methodSelect').value;
+    const query = locationFormGet.querySelector('#queryField').value;
+    console.log(query);
 
     const xhr = new XMLHttpRequest();
-    xhr.open(method,url);
+    if(query){
+      const urlWithQuery = `/getLocation?query=${query}`;
+      xhr.open(method,urlWithQuery);
+    }else{
+      xhr.open(method,url);
+    }
     xhr.setRequestHeader("Accept","application/json");
     if(method === 'get'){
       xhr.onload = () => handleResponse(xhr,"GET",true);
@@ -162,11 +202,18 @@
       const formData = `name=${locationName.value}&latitude=${latitudeField.value}&longitude=${longitudeField.value}&rating=${ratingField.value}&review=${reviewField.value}`;
       xhr.send(formData);
 
+      const locationGet = document.querySelector('#locationFormGet');
+      const addRequest = (e) => requestLocation(e, locationGet);
+      addRequest();
+
+      
+
       return false;
     };
 
     const handleResponse = (xhr, sendType) => {
       const content = document.querySelector('#content');
+      let notFound = false;
       console.log(xhr.status);
 
       switch(xhr.status){
@@ -182,11 +229,16 @@
         case 400:
           content.innerHTML = '<b>Bad Request :(</b>'
           break;
+        case 404:
+          content.innerHTML = '<b>Location not found! Retry query</b>'
+          notFound = true;
+          break;
         default:
           content.innerHTML = '<b>Error Code not implemented by client</b>'
           break;
       }
-      if(sendType != "POST"){
+
+      if(sendType != "POST" || notFound == true){
       parseJSON(xhr, content);
       }
       
@@ -227,6 +279,8 @@ src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhbypdR7ewb2NJ-73kum-rPI2
     <input type="submit" value="Add Location" />
 </form>
 <form id="locationFormGet" action="/getLocation" method="get">
+  <label for="query">Search for a Specific Location</label>
+  <input id="queryField" type="text" name="query"/>
     <input type="submit" value="Get Location" />
 <select id="methodSelect">
     <option value="get">GET</option>

@@ -45,11 +45,20 @@ const handlePost = (request, response, parsedUrl) => {
 
 const handleGet = (request, response, parsedUrl) => {
   if (urlStruct[request.method][parsedUrl.pathname]) {
-    urlStruct[request.method][parsedUrl.pathname](request, response);
+    let query = GetUrlParameter('query', parsedUrl);
+    urlStruct[request.method][parsedUrl.pathname](request, response, query);
   } else {
     jsonHandler.notFound(request, response);
   }
 };
+
+function GetUrlParameter(name, parsedUrl){
+  name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+  var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+  let results = regex.exec(parsedUrl.search);
+  console.log(`Results: ${results}`)
+  return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+}
 
 const onRequest = (request, response) => {
   const parsedUrl = url.parse(request.url);
