@@ -11,29 +11,31 @@
 
 
   const parseJSON = (xhr, content) => {
-    if(xhr.response && xhr.getResponseHeader('Content-Type') === 'application/json'){
+   let count = 0;
       const obj = JSON.parse(xhr.response);
       if(xhr.status !== 404)
       
           for (let location in obj){                  //loop through objects
             let indexedloc = obj[location];           //get an index of the loop
             for(let name in indexedloc){              //loop to get the object at the index 
-              if(indexedloc[name].name){              //check if Json object is not singular
+              if(indexedloc[name].name){              //check if Json object is not a singular object
               console.log(indexedloc[name]);
                 updateMap(indexedloc);
                 break;
                 }else{
+                  count++;
                   let queryLatLng = {lat: parseFloat(obj.latitude), lng: parseFloat(obj.longitude)}
                   map.setCenter(queryLatLng);
-                  break;
-              
+                  if(count <= 1){
+                    content.innerHTML += `<p>Name:${obj.name} Latitude:${obj.latitude} Longitude:${obj.longitude} Rating:${obj.rating} Review:${obj.review}</p>`;
+                  }
             }
           }
         }
         
          
         
-      }
+      
     };
     
     
@@ -61,39 +63,6 @@
         label: "?"
         });
     });
- 
-
-    const contentString =
-    '<div id="infoContent">' +
-    '<div id="siteNotice">' +
-    "</div>" +
-    '<h1 id="firstHeading" class="firstHeading">Uluru</h1>' +
-    '<div id="bodyContent">' +
-    "<p><b>Uluru</b>, also referred to as <b>Ayers Rock</b>, is a large " +
-    "sandstone rock formation in the southern part of the " +
-    "Northern Territory, central Australia. It lies 335&#160;km (208&#160;mi) " +
-    "south west of the nearest large town, Alice Springs; 450&#160;km " +
-    "(280&#160;mi) by road. Kata Tjuta and Uluru are the two major " +
-    "features of the Uluru - Kata Tjuta National Park. Uluru is " +
-    "sacred to the Pitjantjatjara and Yankunytjatjara, the " +
-    "Aboriginal people of the area. It has many springs, waterholes, " +
-    "rock caves and ancient paintings. Uluru is listed as a World " +
-    "Heritage Site.</p>" +
-    '<p>Attribution: Uluru, <a href="https://en.wikipedia.org/w/index.php?title=Uluru&oldid=297882194">' +
-    "https://en.wikipedia.org/w/index.php?title=Uluru</a> " +
-    "(last visited June 22, 2009).</p>" +
-    "</div>" +
-    "</div>";
-
-    const infowindow = new google.maps.InfoWindow({
-    content: contentString,
-  });
-    // The marker, positioned at Uluru
-    let marker = new google.maps.Marker({position: uluru, map: map});
-    
-    marker.addListener("click", () => {
-    infowindow.open(map, marker);
-  });
   
   }
    
@@ -155,11 +124,13 @@
   const requestLocation = (e, locationForm) => {
     const url = '/getLocation';
     const method = locationForm.querySelector('#methodSelect').value;
-    const query = locationFormGet.querySelector('#queryField').value;
+    let query = locationFormGet.querySelector('#queryField').value;
     console.log(query);
 
     const xhr = new XMLHttpRequest();
     if(query){
+      query = query.toLowerCase();
+      //query = query.trim();
       const urlWithQuery = `/getLocation?query=${query}`;
       xhr.open(method,urlWithQuery);
     }else{
@@ -174,7 +145,9 @@
 
     xhr.send();
 
+    if(e){
     e.preventDefault();
+    }
     return false;
   }
 
@@ -199,11 +172,14 @@
 
       xhr.onload = () => handleResponse(xhr, "POST");
 
-      const formData = `name=${locationName.value}&latitude=${latitudeField.value}&longitude=${longitudeField.value}&rating=${ratingField.value}&review=${reviewField.value}`;
+      const formData = `name=${locationName.value.toLowerCase()}&latitude=${latitudeField.value}&longitude=${longitudeField.value}&rating=${ratingField.value}&review=${reviewField.value}`;
       xhr.send(formData);
 
       const locationGet = document.querySelector('#locationFormGet');
       const addRequest = (e) => requestLocation(e, locationGet);
+      const getField = document.querySelector("#queryField");
+      getField.value = "";  //clears query field when pressing post method button
+
       addRequest();
 
       
@@ -224,10 +200,10 @@
           content.innerHTML = '<b>Location Created!</b>'
           break;
         case 204:
-          content.innerHTML = '<b>Updated! (No Content!)</b>'
+          content.innerHTML = '<b>Updated!</b>'
           break;
         case 400:
-          content.innerHTML = '<b>Bad Request :(</b>'
+          content.innerHTML = '<b>Bad Request</b>'
           break;
         case 404:
           content.innerHTML = '<b>Location not found! Retry query</b>'
@@ -263,25 +239,25 @@ src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhbypdR7ewb2NJ-73kum-rPI2
 </script>
 </head>
 <body>
-    <h1>hello</h1>
+    <h1>Map Marker API</h1>
 <div id="map"></div>
 <form id="locationForm" action="/addLocation" method="post">
     <label for="locationName">name: </label>
-    <input id="nameField" type="text" name="name" />
+    <input id="nameField" type="text" name="name" value="uluru"/>
     <label for="latitide">Latitude: </label>
-    <input id="latitudeField" type="float" name="latitude" />
+    <input id="latitudeField" type="float" name="latitude" value="-25.344"/>
     <label for="longitude">Longitude </label>
-    <input id="longitudeField" type="float" name="longitude"/>
+    <input id="longitudeField" type="float" name="longitude" value="131.036"/>
     <label for="rating">Rating </label>
-    <input id="ratingField" type="number" min="0" max = "5" step="1" name="rating"/>
+    <input id="ratingField" type="number" min="0" max = "5" step="1" name="rating" value="5"/>
     <label for="review">Review </label>
-    <input id="reviewField" type="text" name="review"/>
+    <input id="reviewField" type="text" name="review" value="Biggest rock I ever did see!"/>
     <input type="submit" value="Add Location" />
 </form>
 <form id="locationFormGet" action="/getLocation" method="get">
   <label for="query">Search for a Specific Location</label>
   <input id="queryField" type="text" name="query"/>
-    <input type="submit" value="Get Location" />
+    <input type="submit" value="Get Location" id="getButton" />
 <select id="methodSelect">
     <option value="get">GET</option>
     <option value="head">HEAD</option>

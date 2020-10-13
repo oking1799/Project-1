@@ -52,7 +52,7 @@ const handleGet = (request, response, parsedUrl) => {
   }
 };
 
-function GetUrlParameter(name, parsedUrl){
+function GetUrlParameter(name, parsedUrl){  //from https://davidwalsh.name/query-string-javascript, used to get a url query 
   name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
   var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
   let results = regex.exec(parsedUrl.search);
