@@ -46,6 +46,15 @@ const addLocation = (request, response, body) => {
   return respondJSONMeta(request, response, responseCode);
 };
 
+
+const notFound = (request, response) => {
+  const responseJSON = {
+    message: 'The page you are looking for was not found!',
+    id: 'notFound',
+  };
+  return respondJSON(request, response, 404, responseJSON);
+};
+
 const getLocation = (request, response, query) => {
   console.log(`query:${query}`);
   if(query){                                                       //if url has a query
@@ -64,13 +73,7 @@ const getLocation = (request, response, query) => {
 
 const getLocationMeta = (request, response) => respondJSONMeta(request, response, 200);
 
-const notFound = (request, response) => {
-  const responseJSON = {
-    message: 'The page you are looking for was not found!',
-    id: 'notFound',
-  };
-  return respondJSON(request, response, 404, responseJSON);
-};
+
 
 const notFoundMeta = (request, response) => respondJSONMeta(request, response, 404);
 
