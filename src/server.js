@@ -43,15 +43,6 @@ const handlePost = (request, response, parsedUrl) => {
   }
 };
 
-const handleGet = (request, response, parsedUrl) => {
-  if (urlStruct[request.method][parsedUrl.pathname]) {
-    let query = GetUrlParameter('query', parsedUrl);
-    urlStruct[request.method][parsedUrl.pathname](request, response, query);
-  } else {
-    jsonHandler.notFound(request, response);
-  }
-};
-
 function GetUrlParameter(name, parsedUrl){  //from https://davidwalsh.name/query-string-javascript, used to get a url query 
   name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
   var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
@@ -59,6 +50,15 @@ function GetUrlParameter(name, parsedUrl){  //from https://davidwalsh.name/query
   console.log(`Results: ${results}`)
   return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
 }
+
+const handleGet = (request, response, parsedUrl) => {
+  if (urlStruct[request.method][parsedUrl.pathname]) {
+    let urlQuery = GetUrlParameter('query', parsedUrl);
+    urlStruct[request.method][parsedUrl.pathname](request, response, urlQuery);
+  } else {
+    jsonHandler.notFound(request, response);
+  }
+};
 
 const onRequest = (request, response) => {
   const parsedUrl = url.parse(request.url);
